@@ -162,7 +162,7 @@ describe("[SWAP]", () => {
     });
   });
 
-  describe.only("add-tokens()", () => {
+  describe("add-tokens()", () => {
     let seller: Account;
     const listingId = 1;
     const initialAmount = 10;
