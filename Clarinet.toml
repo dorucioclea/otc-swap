@@ -15,3 +15,7 @@ depends_on = []
 [contracts.miamicoin-token]
 path = "contracts/external/miamicoin-token.clar"
 depends_on = ["sip-010-trait-ft-standard"]
+
+[contracts.meme-token]
+path = "contracts/external/meme-token.clar"
+depends_on = ["sip-010-trait-ft-standard"]

@@ -5,6 +5,7 @@ enum Err {
   ERR_INVALID_VALUE = 2000,
   ERR_UNKNOWN_LISTING = 2001,
   ERR_NOT_AUTHORIZED = 2002,
+  ERR_INCORRECT_TOKEN = 2003,
 }
 
 export class Swap extends Model {
@@ -34,6 +35,18 @@ export class Swap extends Model {
 
   getListing(listingId: number) {
     return this.callReadOnly("get-listing", [types.uint(listingId)]).result;
+  }
+
+  addTokens(listingId: number, token: string, amount: number, sender: Account) {
+    return this.callPublic(
+      "add-tokens",
+      [
+        types.uint(listingId),
+        types.principal(token), // token
+        types.uint(amount),
+      ],
+      sender
+    );
   }
 }
 
