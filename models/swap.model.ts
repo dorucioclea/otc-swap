@@ -1,5 +1,5 @@
 import { Account, types } from "../deps.ts";
-import { Model } from "./model.ts";
+import { Model } from "../src/model.ts";
 
 export class Swap extends Model {
   name: string = "swap";
