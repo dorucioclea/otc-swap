@@ -6,6 +6,7 @@ enum Err {
   ERR_UNKNOWN_LISTING = 2001,
   ERR_NOT_AUTHORIZED = 2002,
   ERR_INCORRECT_TOKEN = 2003,
+  ERR_NOT_ENOUGH_TOKENS = 2004,
 }
 
 export class Swap extends Model {
@@ -13,14 +14,10 @@ export class Swap extends Model {
 
   static Err = Err;
 
-  listTokens(amount: number, price: number, sender: Account) {
+  listTokens(token: string, amount: number, price: number, sender: Account) {
     return this.callPublic(
       "list-tokens",
-      [
-        types.principal(`${this.deployer.address}.miamicoin-token`),
-        types.uint(amount),
-        types.uint(price),
-      ],
+      [types.principal(token), types.uint(amount), types.uint(price)],
       sender
     );
   }
@@ -45,6 +42,14 @@ export class Swap extends Model {
         types.principal(token), // token
         types.uint(amount),
       ],
+      sender
+    );
+  }
+
+  buyTokens(listingId: number, token: string, amount: number, sender: Account) {
+    return this.callPublic(
+      "buy-tokens",
+      [types.uint(listingId), types.principal(token), types.uint(amount)],
       sender
     );
   }

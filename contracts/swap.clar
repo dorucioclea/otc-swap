@@ -8,6 +8,7 @@
 (define-constant ERR_UNKNOWN_LISTING (err u2001))
 (define-constant ERR_NOT_AUTHORIZED (err u2002))
 (define-constant ERR_INCORRECT_TOKEN (err u2003))
+(define-constant ERR_NOT_ENOUGH_TOKENS (err u2004))
 
 
 (define-data-var lastListingId uint u0)
@@ -106,6 +107,25 @@
   )
 )
 
+;; TODO allow partial buys
+(define-public (buy-tokens (listingId uint) (token <sip-010-token>) (amount uint))
+  (let
+    (
+      (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
+      (buyer tx-sender)
+    )
+    (asserts! (> amount u0) ERR_INVALID_VALUE)
+    (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
+    (asserts! (> (get left listing) amount) ERR_NOT_ENOUGH_TOKENS)
+    (map-set Listings
+      listingId
+      (merge listing { left: (- (get left listing) amount) })
+    )
+    (try! (stx-transfer? (* (get price listing) amount) buyer (get seller listing)))
+    (try! (as-contract (contract-call? token transfer amount CONTRACT_ADDRESS buyer none)))
+    (ok true)
+  )
+)
 
 ;;==
 (define-private (is-dev-env)
