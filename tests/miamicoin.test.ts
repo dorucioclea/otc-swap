@@ -1,72 +1,57 @@
-import {
-  Account,
-  Accounts,
-  assertEquals,
-  Chain,
-  Clarinet,
-  Tx,
-  types,
-} from "../deps.ts";
+import { describe, beforeEach, it, run, Tx, types } from "../deps.ts";
+import { MiamiCoin } from "../models/miamicoin.model.ts";
+import { Context } from "../src/context.ts";
 
-Clarinet.test({
-  name: "Fake MiamiCoin can be minted at will",
-  async fn(chain: Chain, accounts: Accounts) {
-    const amount = 200;
-    const recipient = accounts.get("wallet_2")!;
+describe("[MiamiCoin]", () => {
+  let ctx: Context;
+  let mia: MiamiCoin;
 
-    const receipt = chain.mineBlock([
-      Tx.contractCall(
-        "miamicoin-token",
-        "mint",
-        [types.uint(amount), types.principal(recipient.address)],
-        recipient.address
-      ),
-    ]).receipts[0];
+  beforeEach(() => {
+    ctx = new Context();
+    mia = ctx.models.get(MiamiCoin);
+  });
 
-    receipt.result.expectOk().expectBool(true);
-    receipt.events.expectFungibleTokenMintEvent(
-      amount,
-      recipient.address,
-      "miamicoin"
-    );
-  },
+  describe("mint()", () => {
+    it("succeeds and mint desired amount of tokens", () => {
+      const amount = 200;
+      const recipient = ctx.accounts.get("wallet_2")!;
+
+      // act
+      const receipt = ctx.chain.mineBlock([mia.mint(amount, recipient)])
+        .receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+      receipt.events.expectFungibleTokenMintEvent(
+        amount,
+        recipient.address,
+        MiamiCoin.TOKEN_NAME
+      );
+    });
+  });
+
+  describe("transfer()", () => {
+    it("succeeds and transfer desired amount from one account to another", () => {
+      const amount = 200;
+      const from = ctx.accounts.get("wallet_2")!;
+      const to = ctx.accounts.get("wallet_3")!;
+      ctx.chain.mineBlock([mia.mint(amount, from)]);
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        mia.transfer(amount, from, to, from),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+      receipt.events.expectFungibleTokenTransferEvent(
+        amount,
+        from.address,
+        to.address,
+        MiamiCoin.TOKEN_NAME
+      );
+    });
+  });
 });
 
-Clarinet.test({
-  name: "Fake MiamiCoin can be transferred",
-  async fn(chain: Chain, accounts: Accounts) {
-    const amount = 200;
-    const from = accounts.get("wallet_2")!;
-    const to = accounts.get("wallet_3")!;
-    chain.mineBlock([
-      Tx.contractCall(
-        "miamicoin-token",
-        "mint",
-        [types.uint(amount), types.principal(from.address)],
-        from.address
-      ),
-    ]);
-
-    const receipt = chain.mineBlock([
-      Tx.contractCall(
-        "miamicoin-token",
-        "transfer",
-        [
-          types.uint(amount),
-          types.principal(from.address),
-          types.principal(to.address),
-          types.none(),
-        ],
-        from.address
-      ),
-    ]).receipts[0];
-
-    receipt.result.expectOk().expectBool(true);
-    receipt.events.expectFungibleTokenTransferEvent(
-      amount,
-      from.address,
-      to.address,
-      "miamicoin"
-    );
-  },
-});
+run();

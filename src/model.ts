@@ -1,4 +1,4 @@
-import { Account, Accounts, Chain, Tx } from "../deps.ts";
+import { Account, Chain, Tx } from "../deps.ts";
 
 export abstract class Model {
   abstract readonly name: string;
@@ -27,13 +27,9 @@ export abstract class Model {
 }
 
 export class Models {
-  static get<T extends Model>(
-    type: {
-      new (chain: Chain, deployer: Account): T;
-    },
-    chain: Chain,
-    accounts: Accounts
-  ): T {
-    return new type(chain, accounts.get("deployer")!);
+  constructor(readonly chain: Chain, readonly deployer: Account) {}
+
+  get<T extends Model>(type: { new (chain: Chain, deployer: Account): T }): T {
+    return new type(this.chain, this.deployer);
   }
 }

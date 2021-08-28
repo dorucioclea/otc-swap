@@ -1,5 +1,3 @@
-import { Account } from "https://deno.land/x/clarinet@v0.15.1/index.ts";
-
 export {
   Chain,
   Clarinet,
@@ -11,4 +9,12 @@ export type { Account } from "https://deno.land/x/clarinet@v0.15.1/index.ts";
 
 export { assertEquals } from "https://deno.land/std@0.90.0/testing/asserts.ts";
 
-export class Accounts extends Map<string, Account> {}
+export {
+  describe,
+  it,
+  beforeAll,
+  beforeEach,
+  afterAll,
+  afterEach,
+  run,
+} from "https://deno.land/x/dspec@v0.1.0/mod.ts";
