@@ -1,3 +1,5 @@
+[![Tests](https://github.com/LNow/otc-swap/actions/workflows/ci-test-contracts.yml/badge.svg)](https://github.com/LNow/otc-swap/actions/workflows/ci-test-contracts.yml) 
+
 * MIA owners list their tokens for sale. 
 * One MIA owner, can create only one listing.
 * Listing owner can change price of his/her listing at any time.
