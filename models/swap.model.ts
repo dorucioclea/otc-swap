@@ -3,6 +3,8 @@ import { Model } from "../src/model.ts";
 
 enum Err {
   ERR_INVALID_VALUE = 2000,
+  ERR_UNKNOWN_LISTING = 2001,
+  ERR_NOT_AUTHORIZED = 2002,
 }
 
 export class Swap extends Model {
@@ -21,4 +23,24 @@ export class Swap extends Model {
       sender
     );
   }
+
+  changePrice(listingId: number, newPrice: number, sender: Account) {
+    return this.callPublic(
+      "change-price",
+      [types.uint(listingId), types.uint(newPrice)],
+      sender
+    );
+  }
+
+  getListing(listingId: number) {
+    return this.callReadOnly("get-listing", [types.uint(listingId)]).result;
+  }
+}
+
+export interface Listing {
+  amount: string;
+  left: string;
+  price: string;
+  seller: string;
+  token: string;
 }
