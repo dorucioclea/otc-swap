@@ -50,6 +50,36 @@ describe("[SWAP]", () => {
       receipt.result.expectErr().expectUint(1);
       assertEquals(receipt.events.length, 0);
     });
+
+    it("throws ERR_INVALID_VALUE when user pass 0 as amount", () => {
+      const user = ctx.accounts.get("wallet_1")!;
+      const amount = 0;
+      const price = 10;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.listTokens(amount, price, user),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INVALID_VALUE);
+      assertEquals(receipt.events.length, 0);
+    });
+
+    it("throws ERR_INVALID_VALUE when user pass 0 as price", () => {
+      const user = ctx.accounts.get("wallet_1")!;
+      const amount = 123;
+      const price = 0;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.listTokens(amount, price, user),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INVALID_VALUE);
+      assertEquals(receipt.events.length, 0);
+    });
   });
 });
 
