@@ -1,0 +1,7 @@
+[project]
+name = "otc-swap"
+requirements = []
+
+[contracts.swap]
+path = "contracts/swap.clar"
+depends_on = []
