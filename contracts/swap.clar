@@ -5,7 +5,8 @@
 (use-trait sip-010-token .sip-010-trait-ft-standard.sip-010-trait)
 
 (define-constant ERR_INVALID_VALUE (err u2000))
-
+(define-constant ERR_UNKNOWN_LISTING (err u2001))
+(define-constant ERR_NOT_AUTHORIZED (err u2002))
 
 
 (define-data-var lastListingId uint u0)
@@ -66,6 +67,21 @@
     (var-set lastListingId newListingId)
     (try! (contract-call? token transfer amount tx-sender CONTRACT_ADDRESS none))
     (ok newListingId)
+  )
+)
+
+(define-public (change-price (listingId uint) (newPrice uint))
+  (let
+    (
+      (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
+    )
+    (asserts! (> newPrice u0) ERR_INVALID_VALUE)
+    (asserts! (is-eq (get seller listing) tx-sender) ERR_NOT_AUTHORIZED)
+    (map-set Listings
+      listingId
+      (merge listing { price: newPrice } )
+    )
+    (ok newPrice)
   )
 )
 
