@@ -13,14 +13,10 @@ export class Swap extends Model {
 
   static Err = Err;
 
-  listTokens(amount: number, price: number, sender: Account) {
+  listTokens(token: string, amount: number, price: number, sender: Account) {
     return this.callPublic(
       "list-tokens",
-      [
-        types.principal(`${this.deployer.address}.miamicoin-token`),
-        types.uint(amount),
-        types.uint(price),
-      ],
+      [types.principal(token), types.uint(amount), types.uint(price)],
       sender
     );
   }

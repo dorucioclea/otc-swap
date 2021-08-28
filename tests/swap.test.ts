@@ -33,7 +33,7 @@ describe("[SWAP]", () => {
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.listTokens(amount, price, user),
+        swap.listTokens(mia.address, amount, price, user),
       ]).receipts[0];
 
       // assert
@@ -53,7 +53,7 @@ describe("[SWAP]", () => {
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.listTokens(amount, price, user),
+        swap.listTokens(mia.address, amount, price, user),
       ]).receipts[0];
 
       // assert
@@ -68,7 +68,7 @@ describe("[SWAP]", () => {
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.listTokens(amount, price, user),
+        swap.listTokens(mia.address, amount, price, user),
       ]).receipts[0];
 
       // assert
@@ -83,7 +83,7 @@ describe("[SWAP]", () => {
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.listTokens(amount, price, user),
+        swap.listTokens(mia.address, amount, price, user),
       ]).receipts[0];
 
       // assert
@@ -102,7 +102,7 @@ describe("[SWAP]", () => {
       seller = ctx.accounts.get("wallet_1")!;
       const receipt = ctx.chain.mineBlock([
         mia.mint(listedAmount, seller),
-        swap.listTokens(listedAmount, oldPrice, seller),
+        swap.listTokens(mia.address, listedAmount, oldPrice, seller),
       ]).receipts[1];
 
       receipt.result.expectOk().expectUint(listingId);
@@ -175,7 +175,7 @@ describe("[SWAP]", () => {
 
       const receipt = ctx.chain.mineBlock([
         mia.mint(2000, seller),
-        swap.listTokens(initialAmount, 200, seller),
+        swap.listTokens(mia.address, initialAmount, 200, seller),
       ]).receipts[1];
 
       receipt.result.expectOk().expectUint(listingId);
