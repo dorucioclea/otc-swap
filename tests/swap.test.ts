@@ -7,6 +7,7 @@ import {
   Account,
 } from "../deps.ts";
 import { MiamiCoin } from "../models/miamicoin.model.ts";
+import { MemeCoin } from "../models/memecoin.model.ts";
 import { Listing, Swap } from "../models/swap.model.ts";
 import { Context } from "../src/context.ts";
 
@@ -14,11 +15,13 @@ describe("[SWAP]", () => {
   let ctx: Context;
   let swap: Swap;
   let mia: MiamiCoin;
+  let meme: MemeCoin;
 
   beforeEach(() => {
     ctx = new Context();
     swap = ctx.models.get(Swap);
     mia = ctx.models.get(MiamiCoin);
+    meme = ctx.models.get(MemeCoin);
   });
 
   describe("list-tokens()", () => {
@@ -183,7 +186,7 @@ describe("[SWAP]", () => {
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.addTokens(listingId, amount, seller),
+        swap.addTokens(listingId, mia.address, amount, seller),
       ]).receipts[0];
 
       // assert
@@ -196,19 +199,60 @@ describe("[SWAP]", () => {
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.addTokens(unknownListingId, amount, seller),
+        swap.addTokens(unknownListingId, mia.address, amount, seller),
       ]).receipts[0];
 
       // assert
       receipt.result.expectErr().expectUint(Swap.Err.ERR_UNKNOWN_LISTING);
     });
 
-    it("succeeds", () => {
+    it("throws ERR_INCORRECT_TOKEN while adding wrong tokens to listing", () => {
+      const amount = 10;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.addTokens(listingId, meme.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INCORRECT_TOKEN);
+    });
+
+    it("throws ERR_NOT_AUTHORIZED while adding tokens to someone else listing", () => {
+      const amount = 123;
+      const otherSeller = ctx.accounts.get("wallet_1")!;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.addTokens(listingId, mia.address, amount, otherSeller),
+      ]).receipts[0];
+
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_NOT_AUTHORIZED);
+    });
+
+    it("succeeds and adds tokens to listing", () => {
       const amount = 100;
 
+      // act
       const receipt = ctx.chain.mineBlock([
-        swap.addTokens(listingId, amount, seller),
-      ]);
+        swap.addTokens(listingId, mia.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+      assertEquals(receipt.events.length, 1);
+      receipt.events.expectFungibleTokenTransferEvent(
+        amount,
+        seller.address,
+        swap.address,
+        MiamiCoin.TOKEN_NAME
+      );
+
+      const listing = <Listing>(
+        swap.getListing(listingId).expectSome().expectTuple()
+      );
+      listing.amount.expectUint(initialAmount + amount);
+      listing.left.expectUint(initialAmount + amount);
     });
   });
 });

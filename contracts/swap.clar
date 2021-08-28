@@ -7,6 +7,7 @@
 (define-constant ERR_INVALID_VALUE (err u2000))
 (define-constant ERR_UNKNOWN_LISTING (err u2001))
 (define-constant ERR_NOT_AUTHORIZED (err u2002))
+(define-constant ERR_INCORRECT_TOKEN (err u2003))
 
 
 (define-data-var lastListingId uint u0)
@@ -91,6 +92,16 @@
       (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
     )
     (asserts! (> amount u0) ERR_INVALID_VALUE)
+    (asserts! (is-eq (get seller listing) tx-sender) ERR_NOT_AUTHORIZED)
+    (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
+    (map-set Listings
+      listingId
+      (merge listing {
+        amount: (+ (get amount listing) amount),
+        left: (+ (get left listing) amount)
+      })
+    )
+    (try! (contract-call? token transfer amount tx-sender CONTRACT_ADDRESS none))
     (ok true)
   )
 )
