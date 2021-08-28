@@ -85,6 +85,17 @@
   )
 )
 
+(define-public (add-tokens (listingId uint) (token <sip-010-token>) (amount uint))
+  (let
+    (
+      (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
+    )
+    (asserts! (> amount u0) ERR_INVALID_VALUE)
+    (ok true)
+  )
+)
+
+
 ;;==
 (define-private (is-dev-env)
   (is-eq DEPLOYED_AT u0)

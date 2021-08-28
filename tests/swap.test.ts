@@ -161,6 +161,56 @@ describe("[SWAP]", () => {
       listing.price.expectUint(newPrice);
     });
   });
+
+  describe.only("add-tokens()", () => {
+    let seller: Account;
+    const listingId = 1;
+    const initialAmount = 10;
+
+    beforeEach(() => {
+      seller = ctx.accounts.get("wallet_6")!;
+
+      const receipt = ctx.chain.mineBlock([
+        mia.mint(2000, seller),
+        swap.listTokens(initialAmount, 200, seller),
+      ]).receipts[1];
+
+      receipt.result.expectOk().expectUint(listingId);
+    });
+
+    it("throws ERR_INVALID_VALUE when user pass 0 as amount", () => {
+      const amount = 0;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.addTokens(listingId, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INVALID_VALUE);
+    });
+
+    it("throws ERR_UNKNOWN_LISTING while adding tokens to unknown listing", () => {
+      const unknownListingId = 349234;
+      const amount = 10;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.addTokens(unknownListingId, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_UNKNOWN_LISTING);
+    });
+
+    it("succeeds", () => {
+      const amount = 100;
+
+      const receipt = ctx.chain.mineBlock([
+        swap.addTokens(listingId, amount, seller),
+      ]);
+    });
+  });
 });
 
 run();

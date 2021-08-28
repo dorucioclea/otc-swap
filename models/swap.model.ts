@@ -35,6 +35,18 @@ export class Swap extends Model {
   getListing(listingId: number) {
     return this.callReadOnly("get-listing", [types.uint(listingId)]).result;
   }
+
+  addTokens(listingId: number, amount: number, sender: Account) {
+    return this.callPublic(
+      "add-tokens",
+      [
+        types.uint(listingId),
+        types.principal(`${this.deployer.address}.miamicoin-token`), // token
+        types.uint(amount),
+      ],
+      sender
+    );
+  }
 }
 
 export interface Listing {
