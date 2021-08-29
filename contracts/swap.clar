@@ -10,6 +10,9 @@
 (define-constant ERR_INCORRECT_TOKEN (err u2003))
 (define-constant ERR_NOT_ENOUGH_TOKENS (err u2004))
 
+(define-constant MAX_FEE_RATE u10)
+
+(define-data-var feeRate uint u0) ;; defined in bp (base points)
 
 (define-data-var lastListingId uint u0)
 (define-map Listings
@@ -21,6 +24,29 @@
     price: uint,
     left: uint
   }
+)
+
+(define-read-only (get-fee-rate)
+  (var-get feeRate)
+)
+
+(define-read-only (get-fee (amount uint) (price uint))
+  (if (is-eq (var-get feeRate) u0)
+    u0
+    (*
+      (/ (* amount price) u1000)
+      (var-get feeRate)
+    )
+  )
+)
+
+(define-public (set-fee-rate (newFeeRate uint))
+  (begin
+    (asserts! (<= newFeeRate MAX_FEE_RATE) ERR_INVALID_VALUE)
+    (asserts! (is-eq tx-sender CONTRACT_OWNER) ERR_NOT_AUTHORIZED)
+    (var-set feeRate newFeeRate)
+    (ok true)
+  )
 )
 
 (define-map UserLastListingIdx
@@ -131,6 +157,7 @@
   (let
     (
       (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
+      (fee (get-fee amount (get price listing)))
       (buyer tx-sender)
     )
     (asserts! (> amount u0) ERR_INVALID_VALUE)
@@ -141,6 +168,7 @@
       (merge listing { left: (- (get left listing) amount) })
     )
     (try! (stx-transfer? (* (get price listing) amount) buyer (get seller listing)))
+    (and (> fee u0) (try! (stx-transfer? fee buyer CONTRACT_ADDRESS)))
     (try! (as-contract (contract-call? token transfer amount CONTRACT_ADDRESS buyer none)))
     (ok true)
   )

@@ -66,6 +66,14 @@ export class Swap extends Model {
       sender
     );
   }
+
+  setFeeRate(newFeeRate: number, sender: Account) {
+    return this.callPublic("set-fee-rate", [types.uint(newFeeRate)], sender);
+  }
+
+  getFeeRate() {
+    return this.callReadOnly("get-fee-rate").result;
+  }
 }
 
 export interface Listing {
