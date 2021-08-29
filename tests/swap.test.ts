@@ -386,6 +386,107 @@ describe("[SWAP]", () => {
       listing.left.expectUint(miaListing.amount - amount);
     });
   });
+
+  describe("withdraw-tokens()", () => {
+    let seller: Account;
+    const listingId = 1;
+    const listingAmount = 20000;
+
+    beforeEach(() => {
+      seller = ctx.accounts.get("wallet_8")!;
+
+      ctx.chain.mineBlock([
+        meme.mint(listingAmount, seller),
+        swap.listTokens(meme.address, listingAmount, 200, seller),
+      ]);
+    });
+
+    it("throws ERR_UNKNOWN_LISTING while withdrawing tokens from unknown listing", () => {
+      const unknownListingId = 324324;
+      const amount = 123;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.withdrawTokens(unknownListingId, meme.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_UNKNOWN_LISTING);
+    });
+
+    it("throws ERR_INCORRECT_TOKEN while withdrawing wrong tokens from listing", () => {
+      const amount = 342;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.withdrawTokens(listingId, mia.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INCORRECT_TOKEN);
+    });
+
+    it("throws ERR_NOT_AUTHORIZED while withdrawing tokens from someone else listing", () => {
+      const otherSeller = ctx.accounts.get("wallet_1")!;
+      const amount = 234;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.withdrawTokens(listingId, meme.address, amount, otherSeller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_NOT_AUTHORIZED);
+    });
+
+    it("throws ERR_INVALID_VALUE when user pass 0 as amount", () => {
+      const amount = 0;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.withdrawTokens(listingId, meme.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INVALID_VALUE);
+    });
+
+    it("throws ERR_NOT_ENOUGH_TOKENS while withdrawing more tokens than left in listing", () => {
+      const amount = listingAmount + 1;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.withdrawTokens(listingId, meme.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_NOT_ENOUGH_TOKENS);
+    });
+
+    it("succeeds and withdraw requested amount from listing", () => {
+      const amount = 200;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.withdrawTokens(listingId, meme.address, amount, seller),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+      assertEquals(receipt.events.length, 1);
+      receipt.events.expectFungibleTokenTransferEvent(
+        amount,
+        swap.address,
+        seller.address,
+        MemeCoin.TOKEN_NAME
+      );
+
+      const listing = <Listing>(
+        swap.getListing(listingId).expectSome().expectTuple()
+      );
+      listing.left.expectUint(listingAmount - amount);
+    });
+  });
 });
 
 run();
