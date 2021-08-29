@@ -426,6 +426,29 @@ describe("[SWAP]", () => {
       );
       listing.left.expectUint(miaListing.amount - amount);
     });
+
+    it("succeeds when user buys all tokens from listing", () => {
+      const buyer = ctx.accounts.get("wallet_5")!;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.buyTokens(
+          memeListing.id,
+          memeListing.token,
+          memeListing.amount,
+          buyer
+        ),
+      ]).receipts[0];
+
+      // asserts
+      receipt.result.expectOk().expectBool(true);
+      receipt.events.expectFungibleTokenTransferEvent(
+        memeListing.amount,
+        swap.address,
+        buyer.address,
+        MemeCoin.TOKEN_NAME
+      );
+    });
   });
 
   describe("withdraw-tokens()", () => {

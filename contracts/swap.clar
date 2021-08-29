@@ -166,7 +166,7 @@
     )
     (asserts! (> amount u0) ERR_INVALID_VALUE)
     (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
-    (asserts! (> (get left listing) amount) ERR_NOT_ENOUGH_TOKENS)
+    (asserts! (>= (get left listing) amount) ERR_NOT_ENOUGH_TOKENS)
     (map-set Listings
       listingId
       (merge listing { left: (- (get left listing) amount) })
