@@ -49,6 +49,10 @@
   )
 )
 
+(define-public (withdraw-fees)
+  (as-contract (stx-transfer? (stx-get-balance CONTRACT_ADDRESS) CONTRACT_ADDRESS CONTRACT_OWNER))
+)
+
 (define-map UserLastListingIdx
   principal
   uint
