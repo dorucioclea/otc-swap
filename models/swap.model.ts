@@ -53,6 +53,19 @@ export class Swap extends Model {
       sender
     );
   }
+
+  withdrawTokens(
+    listingId: number,
+    token: string,
+    amount: number,
+    sender: Account
+  ) {
+    return this.callPublic(
+      "withdraw-tokens",
+      [types.uint(listingId), types.principal(token), types.uint(amount)],
+      sender
+    );
+  }
 }
 
 export interface Listing {

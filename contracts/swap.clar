@@ -107,6 +107,25 @@
   )
 )
 
+(define-public (withdraw-tokens (listingId uint) (token <sip-010-token>) (amount uint))
+  (let
+    (
+      (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
+      (seller tx-sender)
+    )
+    (asserts! (> amount u0) ERR_INVALID_VALUE)
+    (asserts! (is-eq (get seller listing) seller) ERR_NOT_AUTHORIZED)
+    (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
+    (asserts! (>= (get left listing) amount) ERR_NOT_ENOUGH_TOKENS)
+    (map-set Listings
+      listingId
+      (merge listing { left: (- (get left listing) amount) })
+    )
+    (try! (as-contract (contract-call? token transfer amount CONTRACT_ADDRESS seller none)))
+    (ok true)
+  )
+)
+
 ;; TODO allow partial buys
 (define-public (buy-tokens (listingId uint) (token <sip-010-token>) (amount uint))
   (let
