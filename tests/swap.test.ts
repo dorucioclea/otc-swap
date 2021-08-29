@@ -385,6 +385,47 @@ describe("[SWAP]", () => {
       );
       listing.left.expectUint(miaListing.amount - amount);
     });
+
+    it("succeeds, transfers STX to seller, STX to contract and tokens to buyer when fee rate is > 0", () => {
+      const buyer = ctx.accounts.get("wallet_1")!;
+      const amount = 234;
+      const feeRate = 6;
+      ctx.chain.mineBlock([swap.setFeeRate(feeRate, ctx.deployer)]);
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.buyTokens(miaListing.id, miaListing.token, amount, buyer),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+
+      assertEquals(receipt.events.length, 3);
+
+      receipt.events.expectSTXTransferEvent(
+        amount * miaListing.price,
+        buyer.address,
+        miaSeller.address
+      );
+
+      receipt.events.expectSTXTransferEvent(
+        Math.floor((amount * miaListing.price) / 1000) * feeRate,
+        buyer.address,
+        swap.address
+      );
+
+      receipt.events.expectFungibleTokenTransferEvent(
+        amount,
+        swap.address,
+        buyer.address,
+        MiamiCoin.TOKEN_NAME
+      );
+
+      const listing = <Listing>(
+        swap.getListing(miaListing.id).expectSome().expectTuple()
+      );
+      listing.left.expectUint(miaListing.amount - amount);
+    });
   });
 
   describe("withdraw-tokens()", () => {
