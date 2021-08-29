@@ -6,6 +6,7 @@ export class Context {
   readonly accounts: Map<string, Account>;
   readonly contracts: Map<string, any>;
   readonly models: Models;
+  readonly deployer: Account;
 
   constructor(preSetupTx?: Array<Tx>) {
     (Deno as any).core.ops();
@@ -31,6 +32,8 @@ export class Context {
       this.contracts.set(contract.contract_id, contract);
     }
 
-    this.models = new Models(this.chain, this.accounts.get("deployer")!);
+    this.deployer = this.accounts.get("deployer")!;
+
+    this.models = new Models(this.chain, this.deployer);
   }
 }

@@ -385,6 +385,47 @@ describe("[SWAP]", () => {
       );
       listing.left.expectUint(miaListing.amount - amount);
     });
+
+    it("succeeds, transfers STX to seller, STX to contract and tokens to buyer when fee rate is > 0", () => {
+      const buyer = ctx.accounts.get("wallet_1")!;
+      const amount = 234;
+      const feeRate = 6;
+      ctx.chain.mineBlock([swap.setFeeRate(feeRate, ctx.deployer)]);
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.buyTokens(miaListing.id, miaListing.token, amount, buyer),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+
+      assertEquals(receipt.events.length, 3);
+
+      receipt.events.expectSTXTransferEvent(
+        amount * miaListing.price,
+        buyer.address,
+        miaSeller.address
+      );
+
+      receipt.events.expectSTXTransferEvent(
+        Math.floor((amount * miaListing.price) / 1000) * feeRate,
+        buyer.address,
+        swap.address
+      );
+
+      receipt.events.expectFungibleTokenTransferEvent(
+        amount,
+        swap.address,
+        buyer.address,
+        MiamiCoin.TOKEN_NAME
+      );
+
+      const listing = <Listing>(
+        swap.getListing(miaListing.id).expectSome().expectTuple()
+      );
+      listing.left.expectUint(miaListing.amount - amount);
+    });
   });
 
   describe("withdraw-tokens()", () => {
@@ -485,6 +526,45 @@ describe("[SWAP]", () => {
         swap.getListing(listingId).expectSome().expectTuple()
       );
       listing.left.expectUint(listingAmount - amount);
+    });
+  });
+
+  describe("set-fee-rate()", () => {
+    it("throws ERR_INVALID_VALUE while setting new fee higher than 10 bp", () => {
+      const newFeeRate = 11;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.setFeeRate(newFeeRate, ctx.deployer),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_INVALID_VALUE);
+    });
+
+    it("throws ERR_NOT_AUTHORIZED when called by someone who isn't contract owner", () => {
+      const newFeeRate = 2;
+      const user = ctx.accounts.get("wallet_3")!;
+
+      // act
+      const receipt = ctx.chain.mineBlock([swap.setFeeRate(newFeeRate, user)])
+        .receipts[0];
+
+      // assert
+      receipt.result.expectErr().expectUint(Swap.Err.ERR_NOT_AUTHORIZED);
+    });
+
+    it("succeeds and change fee rate", () => {
+      const newFeeRate = 3;
+
+      // act
+      const receipt = ctx.chain.mineBlock([
+        swap.setFeeRate(newFeeRate, ctx.deployer),
+      ]).receipts[0];
+
+      // assert
+      receipt.result.expectOk().expectBool(true);
+      swap.getFeeRate().expectUint(newFeeRate);
     });
   });
 });
