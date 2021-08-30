@@ -74,6 +74,23 @@ export class Swap extends Model {
   getFeeRate() {
     return this.callReadOnly("get-fee-rate").result;
   }
+
+  getListingsCount() {
+    return this.callReadOnly("get-listings-count").result;
+  }
+
+  getTokenListingLastIdx(token: string) {
+    return this.callReadOnly("get-token-listing-last-idx", [
+      types.principal(token),
+    ]).result;
+  }
+
+  getTokenListing(token: string, idx: number) {
+    return this.callReadOnly("get-token-listing", [
+      types.principal(token),
+      types.uint(idx),
+    ]).result;
+  }
 }
 
 export interface Listing {

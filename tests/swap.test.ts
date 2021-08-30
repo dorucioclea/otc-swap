@@ -25,7 +25,7 @@ describe("[SWAP]", () => {
   });
 
   describe("list-tokens()", () => {
-    it("succeeds", () => {
+    it("succeeds and list one token", () => {
       const user = ctx.accounts.get("wallet_1")!;
       const amount = 200;
       const price = 10;
@@ -44,6 +44,41 @@ describe("[SWAP]", () => {
         swap.address,
         MiamiCoin.TOKEN_NAME
       );
+
+      swap.getListingsCount().expectUint(1);
+    });
+
+    it("succeeds and list multiple tokens by the same user", () => {
+      const user = ctx.accounts.get("wallet_1")!;
+      const amount = 200;
+      const price1 = 10;
+      const price2 = 200;
+      ctx.chain.mineBlock([mia.mint(amount * 2, user)]);
+
+      // act
+      const receipts = ctx.chain.mineBlock([
+        swap.listTokens(mia.address, amount, price1, user),
+        swap.listTokens(mia.address, amount, price2, user),
+      ]).receipts;
+
+      // assert
+      receipts[0].result.expectOk().expectUint(1);
+      receipts[0].events.expectFungibleTokenTransferEvent(
+        amount,
+        user.address,
+        swap.address,
+        MiamiCoin.TOKEN_NAME
+      );
+
+      receipts[1].result.expectOk().expectUint(2);
+      receipts[1].events.expectFungibleTokenTransferEvent(
+        amount,
+        user.address,
+        swap.address,
+        MiamiCoin.TOKEN_NAME
+      );
+
+      swap.getListingsCount().expectUint(2);
     });
 
     it("fails when user try to list more tokens than he have", () => {
@@ -588,6 +623,31 @@ describe("[SWAP]", () => {
       // assert
       receipt.result.expectOk().expectBool(true);
       swap.getFeeRate().expectUint(newFeeRate);
+    });
+  });
+
+  describe("get-token-listing()", () => {
+    it("returns none when called for unknown token", () => {
+      swap.getTokenListing(meme.address, 123).expectNone;
+    });
+
+    it("returns listing detail when called with known token listing data", () => {
+      const seller = ctx.accounts.get("wallet_4")!;
+      const amount = 10;
+      const price = 20000;
+
+      ctx.chain.mineBlock([
+        meme.mint(amount, seller),
+        swap.listTokens(meme.address, amount, price, seller),
+      ]);
+
+      const listing = <Listing>(
+        swap.getTokenListing(meme.address, 1).expectSome().expectTuple()
+      );
+      listing.seller.expectPrincipal(seller.address);
+      listing.amount.expectUint(amount);
+      listing.price.expectUint(price);
+      listing.token.expectPrincipal(meme.address);
     });
   });
 });
