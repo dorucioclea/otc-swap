@@ -6,6 +6,11 @@ requirements = []
 path = "contracts/swap.clar"
 depends_on = []
 
+[contracts.pool]
+path = "contracts/pool.clar"
+depends_on = ["sip-010-trait-ft-standard"]
+
+
 # EXTERNAL CONTRACTS
 
 [contracts.sip-010-trait-ft-standard]
