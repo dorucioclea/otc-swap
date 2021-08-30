@@ -63,6 +63,20 @@
   uint
 )
 
+(define-map TokenListingLastIdx
+  principal ;; token
+  uint ;; lastIdx
+)
+
+(define-map TokenListingIds
+  { token: principal, idx: uint }
+  uint ;; listingId
+)
+
+(define-read-only (get-listings-count)
+  (var-get lastListingId)
+)
+
 (define-read-only (get-listing (listingId uint))
   (map-get? Listings listingId)
 )
@@ -75,11 +89,23 @@
   (map-get? UserListingIds { user: user, idx: idx })
 )
 
+(define-read-only (get-token-last-listing-idx (token <sip-010-token>))
+  (default-to u0 (map-get? TokenListingLastIdx (contract-of token)))
+)
+
+(define-read-only (get-token-listing (token <sip-010-token>) (idx uint))
+  (match (map-get? TokenListingIds { token: (contract-of token), idx: idx })
+    listingId (map-get? Listings listingId)
+    none
+  )
+)
+
 (define-public (list-tokens (token <sip-010-token>) (amount uint) (price uint))
   (let
     (
       (newListingId (+ (var-get lastListingId) u1))
       (newUserListingIdx (+ (get-user-last-listing-idx tx-sender) u1))
+      (newTokenListingIdx (+ (get-token-last-listing-idx token) u1))
     )
     (asserts! (and (> amount u0) (> price u0)) ERR_INVALID_VALUE)
     (map-insert Listings newListingId
@@ -93,6 +119,10 @@
     )
     (map-insert UserListingIds
       { user: tx-sender, idx: newUserListingIdx }
+      newListingId
+    )
+    (map-insert TokenListingIds
+      { token: (contract-of token), idx: newTokenListingIdx }
       newListingId
     )
     (map-set UserLastListingIdx tx-sender newUserListingIdx)
@@ -156,7 +186,6 @@
   )
 )
 
-;; TODO allow partial buys
 (define-public (buy-tokens (listingId uint) (token <sip-010-token>) (amount uint))
   (let
     (
