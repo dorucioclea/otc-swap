@@ -7,6 +7,7 @@ enum Err {
   ERR_NOT_AUTHORIZED = 2002,
   ERR_INCORRECT_TOKEN = 2003,
   ERR_NOT_ENOUGH_TOKENS = 2004,
+  ERR_HIGH_SLIPPAGE = 2005,
 }
 
 export class Swap extends Model {
@@ -46,10 +47,21 @@ export class Swap extends Model {
     );
   }
 
-  buyTokens(listingId: number, token: string, amount: number, sender: Account) {
+  buyTokens(
+    listingId: number,
+    token: string,
+    minTokenQty: number,
+    maxStxCosts: number,
+    sender: Account
+  ) {
     return this.callPublic(
       "buy-tokens",
-      [types.uint(listingId), types.principal(token), types.uint(amount)],
+      [
+        types.uint(listingId),
+        types.principal(token),
+        types.uint(minTokenQty),
+        types.uint(maxStxCosts),
+      ],
       sender
     );
   }

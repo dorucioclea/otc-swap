@@ -9,6 +9,7 @@
 (define-constant ERR_NOT_AUTHORIZED (err u2002))
 (define-constant ERR_INCORRECT_TOKEN (err u2003))
 (define-constant ERR_NOT_ENOUGH_TOKENS (err u2004))
+(define-constant ERR_HIGH_SLIPPAGE (err u2005))
 
 (define-constant MAX_FEE_RATE u10)
 
@@ -30,13 +31,10 @@
   (var-get feeRate)
 )
 
-(define-read-only (get-fee (amount uint) (price uint))
+(define-read-only (get-fee (stxAmount uint))
   (if (is-eq (var-get feeRate) u0)
     u0
-    (*
-      (/ (* amount price) u1000)
-      (var-get feeRate)
-    )
+    (/ (* stxAmount (var-get feeRate)) u10000)
   )
 )
 
@@ -186,23 +184,30 @@
   )
 )
 
-(define-public (buy-tokens (listingId uint) (token <sip-010-token>) (amount uint))
+;; require 3 post-conditions
+;; stxTransfer lessOrEqual maxStxCosts from buyer to contract
+;; stxTransfer lessOrEqual maxStxCosts from contract to seller
+;; ftTransfer  equalOrMore minTokenQty from contract to buyer
+(define-public (buy-tokens (listingId uint) (token <sip-010-token>) (minTokenQty uint) (maxStxCosts uint))
   (let
     (
       (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
-      (fee (get-fee amount (get price listing)))
       (buyer tx-sender)
+      (buyQty (/ (- maxStxCosts (get-fee maxStxCosts)) (get price listing)))
+      (buyCosts (* buyQty (get price listing)))
+      (buyFee (get-fee buyCosts))
     )
-    (asserts! (> amount u0) ERR_INVALID_VALUE)
+    (asserts! (and (> minTokenQty u0) (> maxStxCosts u0)) ERR_INVALID_VALUE)
     (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
-    (asserts! (>= (get left listing) amount) ERR_NOT_ENOUGH_TOKENS)
+    (asserts! (>= (get left listing) minTokenQty) ERR_NOT_ENOUGH_TOKENS)
+    (asserts! (>= buyQty minTokenQty) ERR_HIGH_SLIPPAGE)
     (map-set Listings
       listingId
-      (merge listing { left: (- (get left listing) amount) })
+      (merge listing { left: (- (get left listing) buyQty) })
     )
-    (try! (stx-transfer? (* (get price listing) amount) buyer (get seller listing)))
-    (and (> fee u0) (try! (stx-transfer? fee buyer CONTRACT_ADDRESS)))
-    (try! (as-contract (contract-call? token transfer amount CONTRACT_ADDRESS buyer none)))
+    (try! (stx-transfer? (+ buyCosts buyFee) buyer CONTRACT_ADDRESS)) ;; transfer all costs to contract
+    (try! (as-contract (stx-transfer? buyCosts CONTRACT_ADDRESS (get seller listing)))) ;; transfer total - fee from contract to seller
+    (try! (as-contract (contract-call? token transfer buyQty CONTRACT_ADDRESS buyer none))) ;; transfer tokens to buyer
     (ok true)
   )
 )
