@@ -500,21 +500,18 @@ describe("[SWAP]", () => {
       const buyer = ctx.accounts.get("wallet_1")!;
       const feeRate = 6;
       const totalCosts = 3810;
-      const feeCosts = Math.floor((totalCosts * feeRate) / 10000);
-      const buyCosts = totalCosts - feeCosts;
-      const minQty = Math.floor(buyCosts / miaListing.price);
+      const qty = Math.floor(
+        (totalCosts - Math.floor((totalCosts * feeRate) / 10000)) /
+          miaListing.price
+      );
+      const buyCosts = qty * miaListing.price;
+      const feeCosts = Math.floor((buyCosts * feeRate) / 10000);
 
       ctx.chain.mineBlock([swap.setFeeRate(feeRate, ctx.deployer)]);
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.buyTokens(
-          miaListing.id,
-          miaListing.token,
-          minQty,
-          totalCosts,
-          buyer
-        ),
+        swap.buyTokens(miaListing.id, miaListing.token, qty, totalCosts, buyer),
       ]).receipts[0];
 
       // assert
@@ -535,7 +532,7 @@ describe("[SWAP]", () => {
       );
 
       receipt.events.expectFungibleTokenTransferEvent(
-        minQty,
+        qty,
         swap.address,
         buyer.address,
         MiamiCoin.TOKEN_NAME
@@ -544,7 +541,7 @@ describe("[SWAP]", () => {
       const listing = <Listing>(
         swap.getListing(miaListing.id).expectSome().expectTuple()
       );
-      listing.left.expectUint(miaListing.amount - minQty);
+      listing.left.expectUint(miaListing.amount - qty);
     });
 
     it("succeeds when user buys all tokens from listing", () => {

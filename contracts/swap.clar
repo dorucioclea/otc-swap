@@ -184,15 +184,14 @@
   )
 )
 
-;; listingId uint, token
 (define-public (buy-tokens (listingId uint) (token <sip-010-token>) (minQty uint) (totalCosts uint))
   (let
     (
       (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
       (buyer tx-sender)
-      (buyFee (get-fee totalCosts))
-      (buyCosts (- totalCosts buyFee))
-      (buyQty (/ buyCosts (get price listing)))
+      (buyQty (/ (- totalCosts (get-fee totalCosts)) (get price listing)))
+      (buyCosts (* buyQty (get price listing)))
+      (buyFee (get-fee buyCosts))
     )
     (asserts! (and (> minQty u0) (> totalCosts u0)) ERR_INVALID_VALUE)
     (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
