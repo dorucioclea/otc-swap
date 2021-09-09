@@ -50,8 +50,8 @@ export class Swap extends Model {
   buyTokens(
     listingId: number,
     token: string,
-    minQty: number,
-    totalCosts: number,
+    minTokenQty: number,
+    maxStxCosts: number,
     sender: Account
   ) {
     return this.callPublic(
@@ -59,8 +59,8 @@ export class Swap extends Model {
       [
         types.uint(listingId),
         types.principal(token),
-        types.uint(minQty),
-        types.uint(totalCosts),
+        types.uint(minTokenQty),
+        types.uint(maxStxCosts),
       ],
       sender
     );

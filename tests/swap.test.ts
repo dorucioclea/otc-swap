@@ -340,17 +340,17 @@ describe("[SWAP]", () => {
       ]);
     });
 
-    it("throws ERR_INVALID_VALUE when user pass 0 as minQty", () => {
-      const minQty = 0;
-      const totalCosts = 100;
+    it("throws ERR_INVALID_VALUE when user pass 0 as minTokenQty", () => {
+      const minTokenQty = 0;
+      const maxStxCosts = 100;
 
       // act
       const receipt = ctx.chain.mineBlock([
         swap.buyTokens(
           miaListing.id,
           miaListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -359,17 +359,17 @@ describe("[SWAP]", () => {
       receipt.result.expectErr().expectUint(Swap.Err.ERR_INVALID_VALUE);
     });
 
-    it("throws ERR_INVALID_VALUE when user pass 0 as totalCosts", () => {
-      const minQty = 100;
-      const totalCosts = 0;
+    it("throws ERR_INVALID_VALUE when user pass 0 as maxStxCosts", () => {
+      const minTokenQty = 100;
+      const maxStxCosts = 0;
 
       // act
       const receipt = ctx.chain.mineBlock([
         swap.buyTokens(
           miaListing.id,
           miaListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -379,8 +379,8 @@ describe("[SWAP]", () => {
     });
 
     it("throws ERR_UNKNOWN_LISTING while buying tokens from unknown listing", () => {
-      const minQty = 10;
-      const totalCosts = 100;
+      const minTokenQty = 10;
+      const maxStxCosts = 100;
       const unknownListingId = 2982347;
 
       // act
@@ -388,8 +388,8 @@ describe("[SWAP]", () => {
         swap.buyTokens(
           unknownListingId,
           memeListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -399,16 +399,16 @@ describe("[SWAP]", () => {
     });
 
     it("throws ERR_INCORRECT_TOKEN while buying wrong tokens from listing", () => {
-      const minQty = 234;
-      const totalCosts = 200;
+      const minTokenQty = 234;
+      const maxStxCosts = 200;
 
       // act
       const receipt = ctx.chain.mineBlock([
         swap.buyTokens(
           miaListing.id,
           memeListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -418,16 +418,16 @@ describe("[SWAP]", () => {
     });
 
     it("throws ERR_NOT_ENOUGH_TOKENS while buying more tokens than listed", () => {
-      const minQty = miaListing.amount + 1;
-      const totalCosts = 200;
+      const minTokenQty = miaListing.amount + 1;
+      const maxStxCosts = 200;
 
       // act
       const receipt = ctx.chain.mineBlock([
         swap.buyTokens(
           miaListing.id,
           miaListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -438,16 +438,16 @@ describe("[SWAP]", () => {
 
     it("succeeds, transfers STX to seller and tokens to buyer", () => {
       const buyer = ctx.accounts.get("wallet_1")!;
-      const minQty = 200;
-      const totalCosts = minQty * miaListing.price;
+      const minTokenQty = 200;
+      const maxStxCosts = minTokenQty * miaListing.price;
 
       // act
       const receipt = ctx.chain.mineBlock([
         swap.buyTokens(
           miaListing.id,
           miaListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -457,19 +457,19 @@ describe("[SWAP]", () => {
 
       assertEquals(receipt.events.length, 3);
       receipt.events.expectSTXTransferEvent(
-        totalCosts,
+        maxStxCosts,
         buyer.address,
         swap.address
       );
 
       receipt.events.expectSTXTransferEvent(
-        totalCosts,
+        maxStxCosts,
         swap.address,
         miaSeller.address
       );
 
       receipt.events.expectFungibleTokenTransferEvent(
-        minQty,
+        minTokenQty,
         swap.address,
         buyer.address,
         MiamiCoin.TOKEN_NAME
@@ -478,12 +478,12 @@ describe("[SWAP]", () => {
       const listing = <Listing>(
         swap.getListing(miaListing.id).expectSome().expectTuple()
       );
-      listing.left.expectUint(miaListing.amount - minQty);
+      listing.left.expectUint(miaListing.amount - minTokenQty);
     });
 
     it("throws ERR_HIGH_SLIPPAGE when amount after deducting fee is not enough to buy minQty", () => {
-      const minQty = 100;
-      const totalCosts = 1000;
+      const minTokenQty = 100;
+      const maxStxCosts = 1000;
       const feeRate = 10;
       ctx.chain.mineBlock([swap.setFeeRate(feeRate, ctx.deployer)]);
 
@@ -492,8 +492,8 @@ describe("[SWAP]", () => {
         swap.buyTokens(
           miaListing.id,
           miaListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];
@@ -505,19 +505,25 @@ describe("[SWAP]", () => {
     it("succeeds, transfers STX to seller, STX to contract and tokens to buyer when fee rate is > 0", () => {
       const buyer = ctx.accounts.get("wallet_1")!;
       const feeRate = 6;
-      const totalCosts = 3810;
-      const qty = Math.floor(
-        (totalCosts - Math.floor((totalCosts * feeRate) / 10000)) /
+      const maxStxCosts = 3810;
+      const minTokenQty = Math.floor(
+        (maxStxCosts - Math.floor((maxStxCosts * feeRate) / 10000)) /
           miaListing.price
       );
-      const buyCosts = qty * miaListing.price;
+      const buyCosts = minTokenQty * miaListing.price;
       const feeCosts = Math.floor((buyCosts * feeRate) / 10000);
 
       ctx.chain.mineBlock([swap.setFeeRate(feeRate, ctx.deployer)]);
 
       // act
       const receipt = ctx.chain.mineBlock([
-        swap.buyTokens(miaListing.id, miaListing.token, qty, totalCosts, buyer),
+        swap.buyTokens(
+          miaListing.id,
+          miaListing.token,
+          minTokenQty,
+          maxStxCosts,
+          buyer
+        ),
       ]).receipts[0];
 
       // assert
@@ -538,7 +544,7 @@ describe("[SWAP]", () => {
       );
 
       receipt.events.expectFungibleTokenTransferEvent(
-        qty,
+        minTokenQty,
         swap.address,
         buyer.address,
         MiamiCoin.TOKEN_NAME
@@ -547,21 +553,21 @@ describe("[SWAP]", () => {
       const listing = <Listing>(
         swap.getListing(miaListing.id).expectSome().expectTuple()
       );
-      listing.left.expectUint(miaListing.amount - qty);
+      listing.left.expectUint(miaListing.amount - minTokenQty);
     });
 
     it("succeeds when user buys all tokens from listing", () => {
       const buyer = ctx.accounts.get("wallet_5")!;
-      const minQty = memeListing.amount;
-      const totalCosts = minQty * memeListing.price;
+      const minTokenQty = memeListing.amount;
+      const maxStxCosts = minTokenQty * memeListing.price;
 
       // act
       const receipt = ctx.chain.mineBlock([
         swap.buyTokens(
           memeListing.id,
           memeListing.token,
-          minQty,
-          totalCosts,
+          minTokenQty,
+          maxStxCosts,
           buyer
         ),
       ]).receipts[0];

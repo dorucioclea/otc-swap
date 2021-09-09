@@ -185,22 +185,22 @@
 )
 
 ;; require 3 post-conditions
-;; stxTransfer lessOrEqual totalCosts from buyer to contract
-;; stxTransfer lessOrEqual totalCosts from contract to seller
-;; ftTransfer  equalOrMore minQty from contract to buyer
-(define-public (buy-tokens (listingId uint) (token <sip-010-token>) (minQty uint) (totalCosts uint))
+;; stxTransfer lessOrEqual maxStxCosts from buyer to contract
+;; stxTransfer lessOrEqual maxStxCosts from contract to seller
+;; ftTransfer  equalOrMore minTokenQty from contract to buyer
+(define-public (buy-tokens (listingId uint) (token <sip-010-token>) (minTokenQty uint) (maxStxCosts uint))
   (let
     (
       (listing (unwrap! (get-listing listingId) ERR_UNKNOWN_LISTING))
       (buyer tx-sender)
-      (buyQty (/ (- totalCosts (get-fee totalCosts)) (get price listing)))
+      (buyQty (/ (- maxStxCosts (get-fee maxStxCosts)) (get price listing)))
       (buyCosts (* buyQty (get price listing)))
       (buyFee (get-fee buyCosts))
     )
-    (asserts! (and (> minQty u0) (> totalCosts u0)) ERR_INVALID_VALUE)
+    (asserts! (and (> minTokenQty u0) (> maxStxCosts u0)) ERR_INVALID_VALUE)
     (asserts! (is-eq (get token listing) (contract-of token)) ERR_INCORRECT_TOKEN)
-    (asserts! (>= (get left listing) minQty) ERR_NOT_ENOUGH_TOKENS)
-    (asserts! (>= buyQty minQty) ERR_HIGH_SLIPPAGE)
+    (asserts! (>= (get left listing) minTokenQty) ERR_NOT_ENOUGH_TOKENS)
+    (asserts! (>= buyQty minTokenQty) ERR_HIGH_SLIPPAGE)
     (map-set Listings
       listingId
       (merge listing { left: (- (get left listing) buyQty) })
