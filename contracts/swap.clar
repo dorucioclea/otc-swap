@@ -184,6 +184,10 @@
   )
 )
 
+;; require 3 post-conditions
+;; stxTransfer lessOrEqual totalCosts from buyer to contract
+;; stxTransfer lessOrEqual totalCosts from contract to seller
+;; ftTransfer  equalOrMore minQty from contract to buyer
 (define-public (buy-tokens (listingId uint) (token <sip-010-token>) (minQty uint) (totalCosts uint))
   (let
     (
@@ -201,9 +205,9 @@
       listingId
       (merge listing { left: (- (get left listing) buyQty) })
     )
-    (try! (stx-transfer? buyCosts buyer (get seller listing)))
-    (and (> buyFee u0) (try! (stx-transfer? buyFee buyer CONTRACT_ADDRESS)))
-    (try! (as-contract (contract-call? token transfer buyQty CONTRACT_ADDRESS buyer none)))
+    (try! (stx-transfer? (+ buyCosts buyFee) buyer CONTRACT_ADDRESS)) ;; transfer all costs to contract
+    (try! (as-contract (stx-transfer? buyCosts CONTRACT_ADDRESS (get seller listing)))) ;; transfer total - fee from contract to seller
+    (try! (as-contract (contract-call? token transfer buyQty CONTRACT_ADDRESS buyer none))) ;; transfer tokens to buyer
     (ok true)
   )
 )

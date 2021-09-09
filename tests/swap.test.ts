@@ -455,10 +455,16 @@ describe("[SWAP]", () => {
       // assert
       receipt.result.expectOk().expectBool(true);
 
-      assertEquals(receipt.events.length, 2);
+      assertEquals(receipt.events.length, 3);
       receipt.events.expectSTXTransferEvent(
         totalCosts,
         buyer.address,
+        swap.address
+      );
+
+      receipt.events.expectSTXTransferEvent(
+        totalCosts,
+        swap.address,
         miaSeller.address
       );
 
@@ -520,15 +526,15 @@ describe("[SWAP]", () => {
       assertEquals(receipt.events.length, 3);
 
       receipt.events.expectSTXTransferEvent(
-        buyCosts,
+        buyCosts + feeCosts,
         buyer.address,
-        miaSeller.address
+        swap.address
       );
 
       receipt.events.expectSTXTransferEvent(
-        feeCosts,
-        buyer.address,
-        swap.address
+        buyCosts,
+        swap.address,
+        miaSeller.address
       );
 
       receipt.events.expectFungibleTokenTransferEvent(
